@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disaster Relief Management System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #34495e;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        input, select, button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        input, select {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-deploy {
+            background-color: #27ae60;
+            width: 100%;
+            padding: 12px;
+            font-weight: bold;
+        }
+
+        .btn-deploy:hover {
+            background-color: #219150;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            background: #eef2f5;
+            padding: 10px 15px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 8px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .supply-item {
+            border-left-color: #e67e22;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Disaster Relief Management Dashboard</h1>
+
+    <!-- Volunteer Registration -->
+    <div class="card">
+        <h2>Register New Volunteer</h2>
+        <form id="volunteerForm" class="form-group">
+            <input type="text" id="workerId" placeholder="ID (e.g. F101)" required>
+            <input type="text" id="workerName" placeholder="Full Name" required>
+            <select id="workerType">
+                <option value="medical">Medical Volunteer</option>
+                <option value="rescue">Rescue Volunteer</option>
+                <option value="food">Food Volunteer</option>
+            </select>
+            <button type="submit">Add Volunteer</button>
+        </form>
+    </div>
+
+    <!-- Supply Management Section -->
+    <div class="card">
+        <h2>Add Supply Item</h2>
+        
+        <!-- Toggle Supply Type -->
+        <div class="form-group">
+            <select id="supplyCategory" onchange="toggleSupplyForm()">
+                <option value="food">Food Supply</option>
+                <option value="medical">Medical Supply</option>
+            </select>
+        </div>
+
+        <!-- Food Supply Form -->
+        <form id="foodSupplyForm" class="form-group">
+            <input type="text" id="foodBatch" placeholder="Batch Number (e.g. BATCH-F1)" required>
+            <input type="number" id="foodQty" placeholder="Quantity" required>
+            <input type="date" id="foodExpiry" required>
+            <button type="submit">Add Food Supply</button>
+        </form>
+
+        <!-- Medical Supply Form -->
+        <form id="medicalSupplyForm" class="form-group" style="display: none;">
+            <input type="text" id="medBatch" placeholder="Batch Number (e.g. BATCH-M1)" required>
+            <input type="number" id="medQty" placeholder="Quantity" required>
+            <select id="medFridge">
+                <option value="false">No Refrigeration Required</option>
+                <option value="true">Requires Refrigeration</option>
+            </select>
+            <button type="submit">Add Medical Supply</button>
+        </form>
+    </div>
+
+    <!-- Volunteer Operations -->
+    <div class="card">
+        <h2>Volunteer Operations</h2>
+        <button class="btn-deploy" onclick="deployWorkers()">Deploy All Workers</button>
+        <h3 style="margin-top: 15px; font-size: 1rem;">Deployment Logs:</h3>
+        <ul id="deploymentLogs" style="margin-top: 10px;"></ul>
+    </div>
+
+    <!-- Inventory Display -->
+    <div class="card">
+        <h2>Current Relief Supplies Inventory</h2>
+        <button onclick="fetchSupplies()" style="margin-bottom: 10px;">Refresh Inventory</button>
+        <ul id="supplyList"></ul>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '/api/disaster-relief';
+
+    // Toggle between Food and Medical Supply inputs
+    function toggleSupplyForm() {
+        const category = document.getElementById('supplyCategory').value;
+        if (category === 'food') {
+            document.getElementById('foodSupplyForm').style.display = 'flex';
+            document.getElementById('medicalSupplyForm').style.display = 'none';
+        } else {
+            document.getElementById('foodSupplyForm').style.display = 'none';
+            document.getElementById('medicalSupplyForm').style.display = 'flex';
+        }
+    }
+
+    // Submit Volunteer Form
+    document.getElementById('volunteerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('workerId').value;
+        const name = document.getElementById('workerName').value;
+        const type = document.getElementById('workerType').value;
+
+        try {
+            const response = await fetch(`${API_BASE}/volunteers/${type}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`, {
+                method: 'POST'
+            });
+            const text = await response.text();
+            alert(text);
+            document.getElementById('volunteerForm').reset();
+        } catch (error) {
+            console.error('Error adding volunteer:', error);
+        }
+    });
+
+    // Submit Food Supply Form
+    document.getElementById('foodSupplyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const batch = document.getElementById('foodBatch').value;
+        const qty = document.getElementById('foodQty').value;
+        const expiry = document.getElementById('foodExpiry').value;
+
+        try {
+            const response = await fetch(`${API_BASE}/supplies/food?batchNumber=${encodeURIComponent(batch)}&quantity=${qty}&expiryDate=${encodeURIComponent(expiry)}`, {
+                method: 'POST'
+            });
+            const text = await response.text();
+            alert(text);
+            document.getElementById('foodSupplyForm').reset();
+            fetchSupplies();
+        } catch (error) {
+            console.error('Error adding food supply:', error);
+        }
+    });
+
+    // Submit Medical Supply Form
+    document.getElementById('medicalSupplyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const batch = document.getElementById('medBatch').value;
+        const qty = document.getElementById('medQty').value;
+        const fridge = document.getElementById('medFridge').value;
+
+        try {
+            const response = await fetch(`${API_BASE}/supplies/medical?batchNumber=${encodeURIComponent(batch)}&quantity=${qty}&requiresRefrigeration=${fridge}`, {
+                method: 'POST'
+            });
+            const text = await response.text();
+            alert(text);
+            document.getElementById('medicalSupplyForm').reset();
+            fetchSupplies();
+        } catch (error) {
+            console.error('Error adding medical supply:', error);
+        }
+    });
+
+    // Trigger Dynamic Method Dispatch
+    async function deployWorkers() {
+        try {
+            const response = await fetch(`${API_BASE}/deploy`);
+            const logs = await response.json();
+            
+            const logList = document.getElementById('deploymentLogs');
+            logList.innerHTML = '';
+            
+            logs.forEach(log => {
+                const li = document.createElement('li');
+                li.textContent = log;
+                logList.appendChild(li);
+            });
+        } catch (error) {
+            console.error('Error deploying workers:', error);
+        }
+    }
+
+    // Fetch All Supplies
+    // Fetch and display All Supplies with details and quantities
+    async function fetchSupplies() {
+        try {
+            const response = await fetch(`${API_BASE}/supplies`);
+            const supplies = await response.json();
+
+            const supplyList = document.getElementById('supplyList');
+            supplyList.innerHTML = '';
+
+            if (supplies.length === 0) {
+                supplyList.innerHTML = '<li>No supplies currently registered.</li>';
+                return;
+            }
+
+            supplies.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'supply-item';
+                
+                // Checks whether the item is FoodSupply or MedicalSupply based on attributes
+                if (item.expiryDate !== undefined) {
+                    li.innerHTML = `<strong>[FOOD SUPPLY]</strong> &nbsp;|&nbsp; Batch: <b>${item.batchNumber}</b> &nbsp;|&nbsp; Quantity: <b style="color: #27ae60;">${item.quantity} units</b> &nbsp;|&nbsp; Expiry: ${item.expiryDate}`;
+                } else {
+                    const fridgeRequirement = item.requiresRefrigeration ? "Yes (Refrigerated)" : "No";
+                    li.innerHTML = `<strong>[MEDICAL SUPPLY]</strong> &nbsp;|&nbsp; Batch: <b>${item.batchNumber}</b> &nbsp;|&nbsp; Quantity: <b style="color: #27ae60;">${item.quantity} units</b> &nbsp;|&nbsp; Needs Cold Chain: ${fridgeRequirement}`;
+                }
+                supplyList.appendChild(li);
+            });
+        } catch (error) {
+            console.error('Error fetching supplies:', error);
+        }
+    }
+
+    window.onload = fetchSupplies;
+</script>
+
+</body>
+</html>
